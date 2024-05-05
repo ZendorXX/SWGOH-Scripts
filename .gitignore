@@ -1,1 +1,6 @@
 in-out/
+venv/
+db/
+input/
+output/
+platoons/

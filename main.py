@@ -3,23 +3,24 @@ def load_data(planet_name: str) -> dict:
 
     with open(f'platoons/{planet_name}.txt', 'r') as file:
         for line in file.readlines():
-            unit, count = line.split('\t')
-            platoon[unit] = int(count)
+            unit, count, relics = line.split('\t')
+            platoon[unit] = [int(count), int(relics)]
 
     return platoon
 
-def phase_total(planet_list: list[dict]) -> dict:
+def phase_total(planet_list: list[dict]) -> dict: #TODO: correct adding units with different relics
     total = {}
 
     for planet in planet_list:
         for unit in planet.keys():
-            if unit not in total:
-                total[unit] = planet[unit]
+            if unit not in total or total[unit][1] != planet[unit][1]:
+                total[unit] = [planet[unit][0], planet[unit][1]]
                 continue
             
-            total[unit] += planet[unit]
+            total[unit][0] += planet[unit][0]
 
-    return dict(sorted(total.items(), key=lambda item: (-item[1], item[0])))
+    #return dict(sorted(total.items(), key=lambda item: (-item[1][0], item[0])))
+    return total
 
 Corelia = load_data('1 sector/Corelia')
 Coruscant = load_data('1 sector/Coruscant')
@@ -37,7 +38,7 @@ MedicalStation = load_data('4 sector/MedicalStation')
 Kessel = load_data('4 sector/Kessel')
 
 
-total_phase_5_6 = phase_total([MedicalStation, Kessel, Kashyyyk])
+'''total_phase_5_6 = phase_total([MedicalStation, Kessel, Kashyyyk])
 
 total = phase_total([
     Corelia,
@@ -55,4 +56,4 @@ total = phase_total([
 
 with open('output/output.txt', 'w') as out:
     for key in total.keys():
-        out.write(f'{key}: {total[key]}\n')
+        out.write(f'{key}: {total[key]}\n')'''

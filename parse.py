@@ -5,6 +5,19 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
 }
 
+def get_player_name(url: str):
+    responce = requests.get(url, headers=headers)
+
+    if responce.status_code != 200:
+        return None
+
+    soup = BeautifulSoup(responce.text, 'html.parser')
+
+    data = soup.find("title").contents
+    name = data[0].split('\'')[0]
+
+    return name
+
 def get_data_characters(url: str) -> list:
     responce = requests.get(url, headers=headers)
 
@@ -53,7 +66,6 @@ def extract(s: str) -> str:
             break
 
     return s[start_pos:end_pos]
-
 
 def get_data_ships(url: str) -> list:
     responce = requests.get(url, headers=headers)
@@ -108,24 +120,27 @@ def write_dict(dict: dict, file: str) -> None:
         for key in dict.keys():
             out.write(f'{key}: {dict[key]}\n')
 
-myallycode = 827134165
-allycode = 484439191
+def parse_allycodes() -> list:
+    result = []
 
-characters = data_to_dict(get_data_characters(f'https://swgoh.gg/p/{allycode}/characters/'))
-ships = parse_ships(get_data_ships(f'https://swgoh.gg/p/{allycode}/ships/'))
+    with open('db/allycodes.txt') as file:
+        for line in file.readlines():
+            line = line.replace('-', '')
+            result.append(line[:len(line) - 1])
+    
+    return result
+ 
+def get_player_units(allycode: int) -> None:
+    name = get_player_name(f'https://swgoh.gg/p/{allycode}/characters/')
+    characters = data_to_dict(get_data_characters(f'https://swgoh.gg/p/{allycode}/characters/'))
 
-file = 'output/Irisha_units.txt'
+    with open(f'guild/{name}.txt', 'w') as out:
+        for key in characters.keys():
+            out.write(f'{key}: {characters[key]}\n')
 
-with open(file, 'w') as out:
-    #out.write('Characters\n')
 
-    for key in characters.keys():
-        #out.write(f'{key}: {characters[key]}\n')
-        out.write(f'{key}\n')
+def main():
+    pass
 
-    #out.write('Ships\n')
-
-    for key in ships.keys():
-        #out.write(f'{key}: {ships[key]}\n')
-        out.write(f'{key}\n')
-
+if __name__ == '__main__':
+    main()

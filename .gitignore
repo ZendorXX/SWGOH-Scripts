@@ -4,3 +4,5 @@ db/
 input/
 output/
 platoons/
+tmp.txt
+guild/

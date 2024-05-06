@@ -130,7 +130,7 @@ def parse_allycodes() -> list:
     
     return result
  
-def get_player_units(allycode: int) -> None:
+def get_player_units(allycode: str) -> None:
     name = get_player_name(f'https://swgoh.gg/p/{allycode}/characters/')
     characters = data_to_dict(get_data_characters(f'https://swgoh.gg/p/{allycode}/characters/'))
 

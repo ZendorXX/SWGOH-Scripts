@@ -6,3 +6,4 @@ output/
 platoons/
 tmp.txt
 guild/
+__pycache__/

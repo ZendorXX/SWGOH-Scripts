@@ -25,8 +25,12 @@ def get_data_characters(url: str) -> list:
         return None
 
     soup = BeautifulSoup(responce.text, 'html.parser')
+    with open('output/output.txt', 'w') as out:
+        out.write(str(soup))
 
     data = list(str(soup.select("li.media")).split('\n'))
+    tmp = list(str(soup.select("div.unit-card__name")).split('\n'))
+    print(tmp)
 
     result = []
 
@@ -132,15 +136,18 @@ def parse_allycodes() -> list:
  
 def get_player_units(allycode: str) -> None:
     name = get_player_name(f'https://swgoh.gg/p/{allycode}/characters/')
-    characters = data_to_dict(get_data_characters(f'https://swgoh.gg/p/{allycode}/characters/'))
+    print(name)
+    characters = data_to_dict(get_data_characters(f'https://swgoh.gg/p/{allycode}/characters/')) # TODO: add parsing from tmp.py
+    print(get_data_characters(f'https://swgoh.gg/p/{allycode}/characters/'))
 
-    with open(f'guild/{name}.txt', 'w') as out:
+    with open(f'output/{name}.txt', 'w') as out:
         for key in characters.keys():
             out.write(f'{key}: {characters[key]}\n')
 
+# 735275472 - Tokudoku
 
 def main():
-    pass
+    get_player_units('735275472')
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,6 @@
 in-out/
 venv/
+.venv/
 db/
 input/
 output/

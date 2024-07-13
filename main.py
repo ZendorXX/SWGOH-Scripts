@@ -54,6 +54,36 @@ def cnt_ready_units_for_planet(name: str, planet: dict) -> int:
 
     return result
 
+def ready_units_for_planet(name: str, planet: dict) -> list:
+    result = []
+    player_units = {}
+    with open(f'guild/{name}.txt') as file:
+        for line in file.readlines():
+            unit, relics = line.split(':')
+            if int(relics) <= 9:
+                player_units[unit] = int(relics)
+
+    for unit in player_units.keys():
+        for platoon_unit in planet.keys():
+            if unit == platoon_unit and player_units[unit] >= planet[platoon_unit][1]:
+                result.append([unit, player_units[unit]])
+
+    return result
+
+def get_player_units_for_platoons(name: str) -> list:
+    result_set = set()
+    for planet in planets:
+            ready_units = ready_units_for_planet(name, planet)
+            for item in ready_units:
+                result_set.add(tuple(item))
+                
+    result = []
+    for item in result_set:
+        result.append(list(item))
+
+    return result
+
+
 planets = [
     Corelia,
     Coruscant,
@@ -69,6 +99,13 @@ planets = [
     ]
 
 def main():
+    result = get_player_units_for_platoons('Ifa n sc')
+    with open('output/output2.txt', 'w') as out:
+        for item in result:
+            out.write(f'{item[0]}: {item[1]}\n')
+    
+
+    '''
     names = []
 
     with open('db/names.txt', 'r') as file:
@@ -91,6 +128,7 @@ def main():
     with open('output/output.txt', 'w') as out:
         for key in cnt_ready_units.keys():
             out.write(f'{key}: {cnt_ready_units[key]}\n')
+    '''
 
 if __name__ == '__main__':
     main()

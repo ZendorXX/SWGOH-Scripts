@@ -79,39 +79,62 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
     }
 
 def main():
-    # Список планет и минимальных реликов для каждой
-    planets_to_check = [
-        {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
-        {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
-    ]
+    try:
+        # Список планет и минимальных реликов для каждой
+        planets_to_check = [
+            {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
+            {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
+        ]
 
-    # Список имен игроков в гильдии
-    names = []
-    with open('db/names.txt', 'r', encoding='utf-8') as file:
-        for line in file.readlines():
-            names.append(line.strip())
+        # Список имен игроков в гильдии
+        names = []
+        try:
+            with open('db/names.txt', 'r', encoding='utf-8') as file:
+                for line in file.readlines():
+                    names.append(line.strip())
+        except FileNotFoundError:
+            print("Ошибка: Файл db/names.txt не найден.")
+            return
+        except Exception as e:
+            print(f"Ошибка при чтении файла db/names.txt: {e}")
+            return
 
-    # Проверяем покрытие для каждой планеты
-    results = []
-    for planet_info in planets_to_check:
-        result = check_planet_coverage(planet_info["path"], planet_info["min_relic"], names)
-        results.append(result)
-
-    # Выводим результаты в файл
-    os.makedirs('output', exist_ok=True)  # Создаем папку output, если её нет
-    with open('output/check_platoons.txt', 'w', encoding='utf-8') as out:
-        for result in results:
+        # Проверяем покрытие для каждой планеты
+        results = []
+        for planet_info in planets_to_check:
             try:
-                out.write(f"Покрытие взводов для планеты {result['planet_name']}:\n")
-                for unit, coverage in result["coverage"].items():
-                    out.write(f"{unit}: {coverage}/{load_data(planet_info['path'])[unit][0]}\n")
-            except KeyError as e:
-                print(f"Ошибка: Персонаж {unit} отсутствует в данных для планеты {result['planet_name']}.")
-                raise e
-            
-            out.write(f"Общее покрытие: {result['total_covered']}/{result['total_required']}\n\n")
+                result = check_planet_coverage(planet_info["path"], planet_info["min_relic"], names)
+                results.append((planet_info["path"], result))  # Сохраняем путь к планете вместе с результатом
+            except FileNotFoundError:
+                print(f"Ошибка: Файл планеты {planet_info['path']} не найден.")
+                continue
+            except Exception as e:
+                print(f"Ошибка при обработке планеты {planet_info['path']}: {e}")
+                continue
 
-    print("Результаты сохранены в файл output/check_platoons.txt")
+        # Выводим результаты в файл
+        os.makedirs('output', exist_ok=True)  # Создаем папку output, если её нет
+        try:
+            with open('output/check_platoons.txt', 'w', encoding='utf-8') as out:
+                for planet_path, result in results:
+                    try:
+                        planet_data = load_data(planet_path)  # Загружаем данные для текущей планеты
+                        out.write(f"Покрытие взводов для планеты {result['planet_name']}:\n")
+                        for unit, coverage in result["coverage"].items():
+                            if unit in planet_data:  # Проверяем, есть ли персонаж в данных планеты
+                                out.write(f"{unit}: {coverage}/{planet_data[unit][0]}\n")
+                            else:
+                                out.write(f"{unit}: {coverage}/0\n")  # Если персонажа нет, выводим 0
+                        out.write(f"Общее покрытие: {result['total_covered']}/{result['total_required']}\n\n")
+                    except Exception as e:
+                        print(f"Ошибка при записи результатов для планеты {planet_path}: {e}")
+        except Exception as e:
+            print(f"Ошибка при записи в файл output/check_platoons.txt: {e}")
+
+        print("Результаты сохранены в файл output/check_platoons.txt")
+
+    except Exception as e:
+        print(f"Неожиданная ошибка в функции main: {e}")
 
 if __name__ == '__main__':
     main()

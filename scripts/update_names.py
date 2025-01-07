@@ -1,4 +1,4 @@
-from get_name import get_player_name
+from parse.get_name import get_player_name
 
 def update_names_file(allycodes_file: str, names_file: str):
     """Обновляет файл db/names.txt, используя allycodes из db/allycodes.txt."""

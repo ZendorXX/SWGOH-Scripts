@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from get_name import get_player_name
+from parse.get_name import get_player_name
 
 def get_player_characters(allycode):
     url = f'https://swgoh.gg/p/{allycode}/characters/'

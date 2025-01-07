@@ -91,13 +91,43 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
         "total_required": sum([requirements[0] for requirements in planet.values()])
     }
 
+def find_players_with_missing_units(names: list, missing_units: dict, min_relic: int) -> dict:
+    """
+    Возвращает словарь, где ключ — это недостающий персонаж,
+    а значение — список игроков, у которых есть этот персонаж, отсортированный по уровню релика.
+    """
+    players_with_units = {}
+
+    for unit in missing_units.keys():
+        players_with_units[unit] = []
+
+    for name in names:
+        with open(f'guild/{name}.txt', 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+            for line in lines[4:]:  # Пропускаем первые две строки
+                if not line.strip():  # Пропускаем пустые строки
+                    continue
+                parts = line.strip().split('\t')
+                if len(parts) < 3:  # Если строка не содержит всех данных, пропускаем
+                    continue
+                unit, level, relic = parts
+                relic = int(relic)
+                normalized_unit = normalize_name(unit)  # Нормализуем имя
+                if normalized_unit in missing_units and abs(relic - min_relic) <= 2:
+                    players_with_units[normalized_unit].append((name, relic))
+
+    # Сортируем игроков по уровню релика в порядке убывания
+    for unit in players_with_units.keys():
+        players_with_units[unit].sort(key=lambda x: x[1], reverse=True)
+
+    return players_with_units
+
 def main():
     try:
         # Список планет и минимальных реликов для каждой
         planets_to_check = [
             {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
             {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
-            {"path": "platoons/4 sector/MedicalStation.txt", "min_relic": 8},
         ]
 
         # Список имен игроков в гильдии
@@ -140,6 +170,33 @@ def main():
                             else:
                                 out.write(f"{unit}: {coverage}/0\n")  # Если персонажа нет, выводим 0
                         out.write(f"Общее покрытие: {result['total_covered']}/{result['total_required']}\n\n")
+
+                        # Определяем недостающих персонажей
+                        missing_units = {}
+                        for unit, requirements in planet_data.items():
+                            required_count = requirements[0]
+                            available_count = result["coverage"].get(unit, 0)
+                            if available_count < required_count:
+                                missing_units[unit] = required_count - available_count
+
+                        if missing_units:
+                            out.write("Недостающие персонажи:\n")
+                            for unit, count in missing_units.items():
+                                out.write(f"{unit}: нужно прокачать {count}\n")
+
+                            # Находим игроков с недостающими персонажами
+                            players_with_units = find_players_with_missing_units(names, missing_units, planet_info["min_relic"])
+
+                            out.write("\nИгроки с недостающими персонажами:\n")
+                            for unit, players in players_with_units.items():
+                                if players:
+                                    out.write(f"{unit}:\n")
+                                    for player, relic in players:
+                                        out.write(f"  {player} (релик: {relic})\n")
+                                else:
+                                    out.write(f"{unit}: нет игроков с подходящим реликом\n")
+                        out.write("\n")
+
                     except Exception as e:
                         print(f"Ошибка при записи результатов для планеты {planet_path}: {e}")
         except Exception as e:

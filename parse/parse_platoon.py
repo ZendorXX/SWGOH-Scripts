@@ -8,6 +8,7 @@ parsed = {}
 for i in range(0, len(data), 2):
     parsed[data[i]] = data[i + 1] 
 
+relic = 8
 with open('output/output.txt', 'w') as out:
     for key in parsed.keys():
-        out.write(f'{key}\t {parsed[key]}\n')
+        out.write(f'{key}\t {parsed[key]}\t {relic}\n')

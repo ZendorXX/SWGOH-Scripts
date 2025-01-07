@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Загрузка содержимого страницы
-url = 'https://swgoh.gg/p/735275472/characters/'  # замените на фактический URL
+url = 'https://swgoh.gg/p/913995163/characters/'  # замените на фактический URL
 response = requests.get(url)
 content = response.content
 
@@ -12,7 +12,7 @@ soup = BeautifulSoup(content, 'html.parser')
 # Поиск всех карточек персонажей
 character_cards = soup.find_all('div', class_='unit-card-grid__cell')
 
-with open(f'output/Tokudoku.txt', 'w') as out:
+with open(f'output/nighting.txt', 'w') as out:
     # Извлечение информации для каждого персонажа
     for card in character_cards:
         character_name = card['data-unit-name']

@@ -1,7 +1,4 @@
 import os
-import requests
-from bs4 import BeautifulSoup
-
 import unicodedata
 
 def normalize_name(name: str) -> str:
@@ -177,12 +174,12 @@ def main():
                             required_count = requirements[0]
                             available_count = result["coverage"].get(unit, 0)
                             if available_count < required_count:
-                                missing_units[unit] = required_count - available_count
+                                missing_units[unit] = (required_count - available_count, requirements[1])
 
                         if missing_units:
                             out.write("Недостающие персонажи:\n")
-                            for unit, count in missing_units.items():
-                                out.write(f"{unit}: нужно прокачать {count}\n")
+                            for unit, (count, required_relic) in missing_units.items():
+                                out.write(f"{unit}: нужно прокачать {count} шт. в р{required_relic}\n")
 
                             # Находим игроков с недостающими персонажами
                             players_with_units = find_players_with_missing_units(names, missing_units, planet_info["min_relic"])

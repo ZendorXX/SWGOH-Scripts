@@ -1,4 +1,4 @@
-with open('input/check.txt') as file:
+with open('output/AnDro.txt') as file:
     text = file.readlines()
 
 parsed = []
@@ -18,9 +18,9 @@ for item in parsed:
 
 characters = dict(sorted(characters.items(), key=lambda item: item[1]))
 
-with open('output/output.txt', 'w') as file:
+with open('output/AnDro.txt', 'w') as file:
     for key in characters.keys():
-        file.write(f'{key}: {characters[key]}\n')
+        file.write(f'{key} {characters[key]}\n')
 
-    for key in ships.keys():
-        file.write(f'{key}: {ships[key]}\n')
+    #for key in ships.keys():
+    #    file.write(f'{key}: {ships[key]}\n')

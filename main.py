@@ -36,7 +36,7 @@ Tatooine = load_data('3 sector/Tatooine')
 
 MedicalStation = load_data('4 sector/MedicalStation')
 Kessel = load_data('4 sector/Kessel')
-
+Lothal = load_data('4 sector/Lotal')
 
 def cnt_ready_units_for_planet(name: str, planet: dict) -> int:
     result = 0
@@ -95,12 +95,13 @@ planets = [
     Kashyyyk,
     Tatooine,
     MedicalStation,
-    Kessel
+    Kessel,
+    Lothal
     ]
 
 def main():
-    result = get_player_units_for_platoons('Ifa n sc')
-    with open('output/output2.txt', 'w') as out:
+    result = get_player_units_for_platoons('nighting')
+    with open('output/nighting.txt', 'w') as out:
         for item in result:
             out.write(f'{item[0]}: {item[1]}\n')
     

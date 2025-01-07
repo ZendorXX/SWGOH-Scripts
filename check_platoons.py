@@ -82,6 +82,7 @@ def main():
     # Список планет и минимальных реликов для каждой
     planets_to_check = [
         {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
+        {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
     ]
 
     # Список имен игроков в гильдии
@@ -100,9 +101,14 @@ def main():
     os.makedirs('output', exist_ok=True)  # Создаем папку output, если её нет
     with open('output/check_platoons.txt', 'w', encoding='utf-8') as out:
         for result in results:
-            out.write(f"Покрытие взводов для планеты {result['planet_name']}:\n")
-            for unit, coverage in result["coverage"].items():
-                out.write(f"{unit}: {coverage}/{load_data(planet_info['path'])[unit][0]}\n")
+            try:
+                out.write(f"Покрытие взводов для планеты {result['planet_name']}:\n")
+                for unit, coverage in result["coverage"].items():
+                    out.write(f"{unit}: {coverage}/{load_data(planet_info['path'])[unit][0]}\n")
+            except KeyError as e:
+                print(f"Ошибка: Персонаж {unit} отсутствует в данных для планеты {result['planet_name']}.")
+                raise e
+            
             out.write(f"Общее покрытие: {result['total_covered']}/{result['total_required']}\n\n")
 
     print("Результаты сохранены в файл output/check_platoons.txt")

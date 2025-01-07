@@ -128,9 +128,20 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list, used_un
                         if normalized_unit not in used_units_global:
                             available_units.append((name, normalized_unit))
 
+    # Определяем редкость юнитов
+    unit_rarity = {}
+    for _, unit in available_units:
+        if unit in unit_rarity:
+            unit_rarity[unit] += 1
+        else:
+            unit_rarity[unit] = 1
+
+    # Сортируем юниты по редкости (от редких к частым)
+    sorted_units = sorted(available_units, key=lambda x: unit_rarity[x[1]])
+
     # Распределяем юниты с учётом ограничения на количество от одного игрока
     player_units_count = {name: 0 for name in names}  # Счётчик использованных юнитов для каждого игрока
-    for name, unit in available_units:
+    for name, unit in sorted_units:
         if player_units_count[name] < max_units_per_player:
             total_ready_units[unit] += 1
             used_units_by_player[name].append(unit)

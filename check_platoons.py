@@ -81,6 +81,9 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
     for unit in planet.keys():
         total_ready_units[unit] = 0
 
+    # Собираем информацию о том, какие юниты были использованы каждым игроком
+    used_units_by_player = {name: [] for name in names}
+
     for name in names:
         with open(f'guild/{name}.txt', 'r', encoding='utf-8') as file:
             lines = file.readlines()
@@ -109,6 +112,7 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
                     normalized_unit = normalize_name(unit)  # Нормализуем имя
                     if relic >= min_relic and normalized_unit in planet.keys():
                         total_ready_units[normalized_unit] += 1
+                        used_units_by_player[name].append(normalized_unit)
 
                 elif is_ships_section:
                     unit, level, stars = parts
@@ -116,6 +120,7 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
                     normalized_unit = normalize_name(unit)  # Нормализуем имя
                     if stars == 7 and normalized_unit in planet.keys():
                         total_ready_units[normalized_unit] += 1
+                        used_units_by_player[name].append(normalized_unit)
 
     # Сравниваем с требованиями взводов
     platoon_coverage = {}
@@ -128,7 +133,8 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
         "planet_name": os.path.basename(planet_path).replace('.txt', ''),
         "coverage": platoon_coverage,
         "total_covered": sum(platoon_coverage.values()),
-        "total_required": sum([requirements[0] for requirements in planet.values()])
+        "total_required": sum([requirements[0] for requirements in planet.values()]),
+        "used_units_by_player": used_units_by_player,  # Добавляем информацию об использованных юнитах
     }
 
 def find_players_with_missing_units(names: list, missing_units: dict, min_relic: int) -> dict:
@@ -163,7 +169,7 @@ def find_players_with_missing_units(names: list, missing_units: dict, min_relic:
                     unit, level, relic, stars = parts
                     relic = int(relic)
                     normalized_unit = normalize_name(unit)  # Нормализуем имя
-                    if normalized_unit in missing_units and abs(relic - min_relic) <= 2:
+                    if normalized_unit in missing_units and abs(relic - min_relic) <= 10:
                         players_with_units[normalized_unit].append((name, relic))
 
                 elif is_ships_section:
@@ -185,6 +191,7 @@ def main():
         planets_to_check = [
             {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
             {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
+            {"path": "platoons/4 sector/MedicalStation.txt", "min_relic": 8},
         ]
 
         # Список имен игроков в гильдии
@@ -227,6 +234,15 @@ def main():
                             else:
                                 out.write(f"{unit}: {coverage}/0\n")  # Если персонажа нет, выводим 0
                         out.write(f"Общее покрытие: {result['total_covered']}/{result['total_required']}\n\n")
+
+                        # Выводим список использованных юнитов
+                        out.write("Использованные юниты:\n")
+                        for name, units in result["used_units_by_player"].items():
+                            if units:
+                                out.write(f"{name}:\n")
+                                for unit in units:
+                                    out.write(f"  {unit}\n")
+                        out.write("\n")
 
                         # Определяем недостающих персонажей
                         missing_units = {}

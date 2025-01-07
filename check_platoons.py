@@ -2,13 +2,24 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
+import unicodedata
+
+def normalize_name(name: str) -> str:
+    """
+    Нормализует имя персонажа, удаляя специальные символы и приводя к нижнему регистру.
+    """
+    # Удаляем специальные символы (например, Î, é и т.д.)
+    name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode('ascii')
+    return name
+
 def load_data(planet_path: str) -> dict:
     platoon = {}
 
     with open(planet_path, 'r', encoding='utf-8') as file:
         for line in file.readlines():
             unit, count, relics = line.strip().split('\t')
-            platoon[unit] = [int(count), int(relics)]
+            normalized_unit = normalize_name(unit)  # Нормализуем имя
+            platoon[normalized_unit] = [int(count), int(relics)]
 
     return platoon
 
@@ -27,7 +38,8 @@ def cnt_ready_units_for_planet(name: str, planet: dict, min_relic: int) -> int:
             unit, level, relic = parts
             relic = int(relic)
             if relic >= min_relic:  # Учитываем только персонажей с реликом >= min_relic
-                player_units[unit] = relic
+                normalized_unit = normalize_name(unit)  # Нормализуем имя
+                player_units[normalized_unit] = relic
     
     for unit in player_units.keys():
         for platoon_unit in planet.keys():
@@ -61,8 +73,9 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
                     continue
                 unit, level, relic = parts
                 relic = int(relic)
-                if relic >= min_relic and unit in planet.keys():
-                    total_ready_units[unit] += 1
+                normalized_unit = normalize_name(unit)  # Нормализуем имя
+                if relic >= min_relic and normalized_unit in planet.keys():
+                    total_ready_units[normalized_unit] += 1
 
     # Сравниваем с требованиями взводов
     platoon_coverage = {}
@@ -84,6 +97,7 @@ def main():
         planets_to_check = [
             {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
             {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
+            {"path": "platoons/4 sector/MedicalStation.txt", "min_relic": 8},
         ]
 
         # Список имен игроков в гильдии

@@ -23,25 +23,47 @@ def load_data(planet_path: str) -> dict:
 def cnt_ready_units_for_planet(name: str, planet: dict, min_relic: int) -> int:
     result = 0
     player_units = {}
+
     with open(f'guild/{name}.txt', 'r', encoding='utf-8') as file:
         lines = file.readlines()
-        # Пропускаем первые две строки (заголовок и разделитель)
-        for line in lines[4:]:
-            if not line.strip():  # Пропускаем пустые строки
+        is_characters_section = False
+        is_ships_section = False
+
+        for line in lines:
+            if "Персонажи:" in line:
+                is_characters_section = True
+                is_ships_section = False
                 continue
+            if "Корабли:" in line:
+                is_characters_section = False
+                is_ships_section = True
+                continue
+            if not line.strip() or "Имя персонажа" in line or "Имя корабля" in line or "---" in line:
+                continue  # Пропускаем заголовки и разделители
+
             parts = line.strip().split('\t')
             if len(parts) < 3:  # Если строка не содержит всех данных, пропускаем
                 continue
-            unit, level, relic = parts
-            relic = int(relic)
-            if relic >= min_relic:  # Учитываем только персонажей с реликом >= min_relic
-                normalized_unit = normalize_name(unit)  # Нормализуем имя
-                player_units[normalized_unit] = relic
-    
+
+            if is_characters_section:
+                unit, level, relic, stars = parts
+                relic = int(relic)
+                if relic >= min_relic:  # Учитываем только персонажей с реликом >= min_relic
+                    normalized_unit = normalize_name(unit)  # Нормализуем имя
+                    player_units[normalized_unit] = relic
+
+            elif is_ships_section:
+                unit, level, stars = parts
+                stars = int(stars)
+                if stars == 7:  # Учитываем только корабли с 7 звёздами
+                    normalized_unit = normalize_name(unit)  # Нормализуем имя
+                    player_units[normalized_unit] = 0  # Для кораблей релик не учитывается
+
     for unit in player_units.keys():
         for platoon_unit in planet.keys():
-            if unit == platoon_unit and player_units[unit] >= planet[platoon_unit][1]:
-                result += 1
+            if unit == platoon_unit:
+                if unit in player_units and (player_units[unit] >= planet[platoon_unit][1] or player_units[unit] == 0):
+                    result += 1
 
     return result
 
@@ -49,12 +71,12 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
     # Загружаем данные для планеты
     planet = load_data(planet_path)
 
-    # Считаем, сколько персонажей с реликом >= min_relic есть у каждого игрока
+    # Считаем, сколько юнитов (персонажей и кораблей) с реликом >= min_relic есть у каждого игрока
     player_ready_units = {}
     for name in names:
         player_ready_units[name] = cnt_ready_units_for_planet(name, planet, min_relic)
 
-    # Подсчитываем общее количество доступных персонажей для каждого юнита
+    # Подсчитываем общее количество доступных юнитов для каждого юнита
     total_ready_units = {}
     for unit in planet.keys():
         total_ready_units[unit] = 0
@@ -62,17 +84,38 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
     for name in names:
         with open(f'guild/{name}.txt', 'r', encoding='utf-8') as file:
             lines = file.readlines()
-            for line in lines[4:]:  # Пропускаем первые две строки
-                if not line.strip():  # Пропускаем пустые строки
+            is_characters_section = False
+            is_ships_section = False
+
+            for line in lines:
+                if "Персонажи:" in line:
+                    is_characters_section = True
+                    is_ships_section = False
                     continue
+                if "Корабли:" in line:
+                    is_characters_section = False
+                    is_ships_section = True
+                    continue
+                if not line.strip() or "Имя персонажа" in line or "Имя корабля" in line or "---" in line:
+                    continue  # Пропускаем заголовки и разделители
+
                 parts = line.strip().split('\t')
                 if len(parts) < 3:  # Если строка не содержит всех данных, пропускаем
                     continue
-                unit, level, relic = parts
-                relic = int(relic)
-                normalized_unit = normalize_name(unit)  # Нормализуем имя
-                if relic >= min_relic and normalized_unit in planet.keys():
-                    total_ready_units[normalized_unit] += 1
+
+                if is_characters_section:
+                    unit, level, relic, stars = parts
+                    relic = int(relic)
+                    normalized_unit = normalize_name(unit)  # Нормализуем имя
+                    if relic >= min_relic and normalized_unit in planet.keys():
+                        total_ready_units[normalized_unit] += 1
+
+                elif is_ships_section:
+                    unit, level, stars = parts
+                    stars = int(stars)
+                    normalized_unit = normalize_name(unit)  # Нормализуем имя
+                    if stars == 7 and normalized_unit in planet.keys():
+                        total_ready_units[normalized_unit] += 1
 
     # Сравниваем с требованиями взводов
     platoon_coverage = {}
@@ -89,10 +132,6 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
     }
 
 def find_players_with_missing_units(names: list, missing_units: dict, min_relic: int) -> dict:
-    """
-    Возвращает словарь, где ключ — это недостающий персонаж,
-    а значение — список игроков, у которых есть этот персонаж, отсортированный по уровню релика.
-    """
     players_with_units = {}
 
     for unit in missing_units.keys():
@@ -101,17 +140,38 @@ def find_players_with_missing_units(names: list, missing_units: dict, min_relic:
     for name in names:
         with open(f'guild/{name}.txt', 'r', encoding='utf-8') as file:
             lines = file.readlines()
-            for line in lines[4:]:  # Пропускаем первые две строки
-                if not line.strip():  # Пропускаем пустые строки
+            is_characters_section = False
+            is_ships_section = False
+
+            for line in lines:
+                if "Персонажи:" in line:
+                    is_characters_section = True
+                    is_ships_section = False
                     continue
+                if "Корабли:" in line:
+                    is_characters_section = False
+                    is_ships_section = True
+                    continue
+                if not line.strip() or "Имя персонажа" in line or "Имя корабля" in line or "---" in line:
+                    continue  # Пропускаем заголовки и разделители
+
                 parts = line.strip().split('\t')
                 if len(parts) < 3:  # Если строка не содержит всех данных, пропускаем
                     continue
-                unit, level, relic = parts
-                relic = int(relic)
-                normalized_unit = normalize_name(unit)  # Нормализуем имя
-                if normalized_unit in missing_units and abs(relic - min_relic) <= 2:
-                    players_with_units[normalized_unit].append((name, relic))
+
+                if is_characters_section:
+                    unit, level, relic, stars = parts
+                    relic = int(relic)
+                    normalized_unit = normalize_name(unit)  # Нормализуем имя
+                    if normalized_unit in missing_units and abs(relic - min_relic) <= 2:
+                        players_with_units[normalized_unit].append((name, relic))
+
+                elif is_ships_section:
+                    unit, level, stars = parts
+                    stars = int(stars)
+                    normalized_unit = normalize_name(unit)  # Нормализуем имя
+                    if normalized_unit in missing_units and stars == 7:
+                        players_with_units[normalized_unit].append((name, 0))  # Для кораблей релик не учитывается
 
     # Сортируем игроков по уровню релика в порядке убывания
     for unit in players_with_units.keys():

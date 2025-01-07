@@ -67,14 +67,13 @@ def cnt_ready_units_for_planet(name: str, planet: dict, min_relic: int) -> int:
 
     return result
 
-def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict:
+def check_planet_coverage(planet_path: str, min_relic: int, names: list, used_units_global: dict) -> dict:
+    """
+    Проверяет покрытие взводов для одной планеты.
+    Использует глобальный словарь used_units_global для отслеживания уже использованных юнитов.
+    """
     # Загружаем данные для планеты
     planet = load_data(planet_path)
-
-    # Считаем, сколько юнитов (персонажей и кораблей) с реликом >= min_relic есть у каждого игрока
-    player_ready_units = {}
-    for name in names:
-        player_ready_units[name] = cnt_ready_units_for_planet(name, planet, min_relic)
 
     # Подсчитываем общее количество доступных юнитов для каждого юнита
     total_ready_units = {}
@@ -84,6 +83,11 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
     # Собираем информацию о том, какие юниты были использованы каждым игроком
     used_units_by_player = {name: [] for name in names}
 
+    # Ограничение на количество юнитов от одного игрока
+    max_units_per_player = 10
+
+    # Сначала собираем всех доступных юнитов
+    available_units = []
     for name in names:
         with open(f'guild/{name}.txt', 'r', encoding='utf-8') as file:
             lines = file.readlines()
@@ -111,16 +115,27 @@ def check_planet_coverage(planet_path: str, min_relic: int, names: list) -> dict
                     relic = int(relic)
                     normalized_unit = normalize_name(unit)  # Нормализуем имя
                     if relic >= min_relic and normalized_unit in planet.keys():
-                        total_ready_units[normalized_unit] += 1
-                        used_units_by_player[name].append(normalized_unit)
+                        # Проверяем, не был ли юнит уже использован в другой планете
+                        if normalized_unit not in used_units_global:
+                            available_units.append((name, normalized_unit))
 
                 elif is_ships_section:
                     unit, level, stars = parts
                     stars = int(stars)
                     normalized_unit = normalize_name(unit)  # Нормализуем имя
                     if stars == 7 and normalized_unit in planet.keys():
-                        total_ready_units[normalized_unit] += 1
-                        used_units_by_player[name].append(normalized_unit)
+                        # Проверяем, не был ли юнит уже использован в другой планете
+                        if normalized_unit not in used_units_global:
+                            available_units.append((name, normalized_unit))
+
+    # Распределяем юниты с учётом ограничения на количество от одного игрока
+    player_units_count = {name: 0 for name in names}  # Счётчик использованных юнитов для каждого игрока
+    for name, unit in available_units:
+        if player_units_count[name] < max_units_per_player:
+            total_ready_units[unit] += 1
+            used_units_by_player[name].append(unit)
+            used_units_global[unit] = True  # Помечаем юнит как использованный
+            player_units_count[name] += 1
 
     # Сравниваем с требованиями взводов
     platoon_coverage = {}
@@ -189,9 +204,9 @@ def main():
     try:
         # Список планет и минимальных реликов для каждой
         planets_to_check = [
-            {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
             {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
             {"path": "platoons/4 sector/MedicalStation.txt", "min_relic": 8},
+            {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
         ]
 
         # Список имен игроков в гильдии
@@ -207,11 +222,14 @@ def main():
             print(f"Ошибка при чтении файла db/names.txt: {e}")
             return
 
+        # Глобальный словарь для отслеживания использованных юнитов
+        used_units_global = {}
+
         # Проверяем покрытие для каждой планеты
         results = []
         for planet_info in planets_to_check:
             try:
-                result = check_planet_coverage(planet_info["path"], planet_info["min_relic"], names)
+                result = check_planet_coverage(planet_info["path"], planet_info["min_relic"], names, used_units_global)
                 results.append((planet_info["path"], result))  # Сохраняем путь к планете вместе с результатом
             except FileNotFoundError:
                 print(f"Ошибка: Файл планеты {planet_info['path']} не найден.")
@@ -259,7 +277,8 @@ def main():
 
                             # Находим игроков с недостающими персонажами
                             players_with_units = find_players_with_missing_units(names, missing_units, planet_info["min_relic"])
-
+                            
+                            '''
                             out.write("\nИгроки с недостающими персонажами:\n")
                             for unit, players in players_with_units.items():
                                 if players:
@@ -268,6 +287,7 @@ def main():
                                         out.write(f"  {player} (релик: {relic})\n")
                                 else:
                                     out.write(f"{unit}: нет игроков с подходящим реликом\n")
+                            '''
                         out.write("\n")
 
                     except Exception as e:

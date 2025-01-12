@@ -167,7 +167,7 @@ def find_players_with_missing_units(names: list, missing_units: dict, min_relic:
                     unit, level, relic, stars = parts
                     relic = int(relic)
                     normalized_unit = normalize_name(unit)
-                    if normalized_unit in missing_units and abs(relic - min_relic) <= 10:
+                    if normalized_unit in missing_units and abs(relic - min_relic) <= 2:
                         players_with_units[normalized_unit].append((name, relic))
 
                 elif is_ships_section:
@@ -186,7 +186,15 @@ def find_players_with_missing_units(names: list, missing_units: dict, min_relic:
 def main():
     try:
         # Список планет и минимальных реликов для каждой
+        '''
         planets_to_check = [
+            {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
+            {"path": "platoons/4 sector/MedicalStation.txt", "min_relic": 8},
+            {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},
+        ]
+        '''
+        planets_to_check = [
+            # {"path": "platoons/4 sector/combined_units.txt", "min_relic": 8},
             {"path": "platoons/4 sector/Kessel.txt", "min_relic": 8},
             {"path": "platoons/4 sector/MedicalStation.txt", "min_relic": 8},
             {"path": "platoons/4 sector/Lothal.txt", "min_relic": 8},

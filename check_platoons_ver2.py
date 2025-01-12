@@ -1,6 +1,11 @@
 import os
 import sys
+import unicodedata
 from collections import defaultdict
+
+def normalize_name(name: str) -> str:
+    name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode('ascii')
+    return name
 
 # Структура для хранения данных о юнитах игроков
 players_units = defaultdict(lambda: {"characters": {}, "ships": {}})
@@ -32,7 +37,7 @@ def read_player_data(player_file):
         if current_section and line:
             parts = line.split('\t')
             if len(parts) >= 3:
-                name = parts[0]
+                name = normalize_name(parts[0])
                 try:
                     if current_section == "characters":
                         level = int(parts[1])
@@ -64,7 +69,7 @@ def read_platoon_data(platoon_file):
     for line in lines:
         parts = line.strip().split('\t')
         if len(parts) == 3:
-            name = parts[0]
+            name = normalize_name(parts[0])
             count = int(parts[1])
             relic_or_stars = int(parts[2])
             platoon_units.append({
@@ -146,7 +151,7 @@ def distribute_units(players_units, platoon_units, planet_name, player_assigned_
 # Основная функция
 def main():
     # Перенаправляем вывод в файл
-    with open("output.txt", "w", encoding="utf-8") as f:
+    with open("output/output.txt", "w", encoding="utf-8") as f:
         sys.stdout = f  # Перенаправляем stdout в файл
 
         # Чтение данных игроков

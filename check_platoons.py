@@ -94,6 +94,7 @@ def check_planet_coverage(planets_to_check: list, min_relic: int, names: list) -
     player_units_count = {name: 0 for name in names}  # Счётчик использованных юнитов для каждого игрока
     used_units_global = {}  # Словарь для отслеживания использованных юнитов
     used_units_by_player = {name: [] for name in names}  # Словарь для отслеживания юнитов по игрокам
+    used_units_by_planet = {planet_path: {} for planet_path in planets_data.keys()}  # Словарь для отслеживания юнитов по планетам
 
     for name, unit in sorted_units:
         if player_units_count[name] < max_units_per_player:
@@ -103,13 +104,19 @@ def check_planet_coverage(planets_to_check: list, min_relic: int, names: list) -
                 used_units_by_player[name].append(unit)
                 player_units_count[name] += 1
 
+                # Распределяем юнит по планетам
+                for planet_path, planet_data in planets_data.items():
+                    if unit in planet_data and used_units_by_planet[planet_path].get(unit, 0) < planet_data[unit][0]:
+                        used_units_by_planet[planet_path][unit] = used_units_by_planet[planet_path].get(unit, 0) + 1
+                        break  # Юнит распределён для одной планеты, переходим к следующему
+
     # Проверяем покрытие для каждой планеты
     results = []
     for planet_path, planet_data in planets_data.items():
         platoon_coverage = {}
         for unit, requirements in planet_data.items():
             required_count = requirements[0]
-            available_count = used_units_global.get(unit, 0)
+            available_count = used_units_by_planet[planet_path].get(unit, 0)
             platoon_coverage[unit] = {
                 "available": available_count,
                 "required": required_count,
